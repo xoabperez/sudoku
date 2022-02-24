@@ -1,0 +1,16 @@
+Display is a sudoku grid
+ - Shows random numbers set up?
+    - Show them with a slight highlight to show they're original
+    - Non-editable
+ - Ability for user to edit numbers?
+    - If user puts non-{1-9} value, highlight red?
+ - Buttons
+    - Clear the numbers
+    - New random grid
+ - Difficulty level - number of cells filled?
+ - Solve button
+
+
+Questions
+How are new games typically generated?
+ - Choose X number of random values from 1-81, fill them randomly?
