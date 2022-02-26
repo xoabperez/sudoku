@@ -11,61 +11,116 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import java.awt.Dimension;
 import java.awt.GridLayout;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 /** 
  * TableDemo is just like SimpleTableDemo, except that it
  * uses a custom TableModel.
  */
-public class GridDisplay extends JPanel {
+public class GridDisplay extends JPanel implements PropertyChangeListener{
     private boolean DEBUG = false;
-
+    private JTable table;
+    private SudokuGridModel model = new SudokuGridModel();
+    
     public GridDisplay() {
-        super(new GridLayout(1,0));
+        super(new GridLayout(0,1));
 
-        JTable table = new JTable(new SudokuGridModel());
-        table.setPreferredScrollableViewportSize(new Dimension(300, 200));
+        table = new JTable(model);
+        table.setAutoResizeMode( JTable.AUTO_RESIZE_ALL_COLUMNS );
         table.setFillsViewportHeight(true);
-
+        
         //Create the scroll pane and add the table to it.
         JScrollPane scrollPane = new JScrollPane(table);
-
-        //Add the scroll pane to this panel.
+        
+        // From https://stackoverflow.com/questions/29174942/make-jtable-rows-fill-the-entire-height-of-jscrollpane
+        table.addComponentListener(new ComponentAdapter()
+        {
+            @Override
+            public void componentResized(ComponentEvent e)
+            {
+                table.setRowHeight(16);
+                Dimension p = table.getPreferredSize();
+                Dimension v = scrollPane.getViewportBorderBounds().getSize();
+                if (v.height > p.height)
+                {
+                    int available = v.height - 
+                        table.getRowCount() * table.getRowMargin();
+                    int perRow = available / table.getRowCount();
+                    table.setRowHeight(perRow);
+                }
+            }
+        });
+        
         add(scrollPane);
     }
 
-    class SudokuGridModel extends AbstractTableModel {
-        private String[] columnNames = {"First Name",
-                                        "Last Name",
-                                        "Sport",
-                                        "# of Years",
-                                        "Vegetarian"};
-        private Object[][] data = {
-	    {"Kathy", "Smith",
-	     "Snowboarding", new Integer(5), new Boolean(false)},
-	    {"John", "Doe",
-	     "Rowing", new Integer(3), new Boolean(true)},
-	    {"Sue", "Black",
-	     "Knitting", new Integer(2), new Boolean(false)},
-	    {"Jane", "White",
-	     "Speed reading", new Integer(20), new Boolean(true)},
-	    {"Joe", "Brown",
-	     "Pool", new Integer(10), new Boolean(false)}
-        };
+    /**
+     * Set the grid for the game, meaning we should display its values.
+     * @param grid 
+     */
+    public void setGrid(Grid grid){
+        model.setGrid(grid);
+        
+        // Listen for cell changes
+        grid.addPropertyChangeListener(this);
+    }
 
+    @Override
+    public void propertyChange(PropertyChangeEvent pce) {
+        // If we get this, we're solving internally so don't need to 
+        // runthe table setValueAt
+        if (pce.getPropertyName().equals(Grid.NEW_CELL_VALUE)){
+            Cell cell = (Cell) pce.getNewValue();
+            this.table.setValueAt(cell.getValue(), cell.row, cell.col);
+            this.table.repaint();
+        }
+    }
+    
+    class SudokuGridModel extends AbstractTableModel {
+        private String[] columnNames = null;
+        public Object data[][] = new Integer[9][9];
+        private Grid grid = new Grid();
+
+        public void setGrid(Grid grid){
+            this.grid = grid;
+            
+            // Need to clear out some values and set others;
+            grid.emptyCells.forEach((pair) -> {
+                Integer row = (int) pair.getKey();
+                Integer col = (int) pair.getValue();
+
+                setValueAt(null, row, col);
+            });
+            grid.filledCells.forEach((pair, value) -> {
+                Integer row = (int) pair.getKey();
+                Integer col = (int) pair.getValue();
+
+                setValueAt(value, row, col);
+            });
+        }
+        
+        public void solve() throws Exception{
+            this.grid.solve1();
+        }
+        
         public int getColumnCount() {
-            return columnNames.length;
+            return 9;
         }
 
         public int getRowCount() {
-            return data.length;
+            return 9;
         }
 
         public String getColumnName(int col) {
-            return columnNames[col];
+            return null;
         }
 
         public Object getValueAt(int row, int col) {
-            return data[row][col];
+            Object val = (grid.getValueAt(row, col) == null) ? "" : grid.getValueAt(row, col);
+            return grid.getValueAt(row, col);
         }
 
         /*
@@ -75,7 +130,7 @@ public class GridDisplay extends JPanel {
          * rather than a check box.
          */
         public Class getColumnClass(int c) {
-            return getValueAt(0, c).getClass();
+            return Integer.class;
         }
 
         /*
@@ -85,7 +140,7 @@ public class GridDisplay extends JPanel {
         public boolean isCellEditable(int row, int col) {
             //Note that the data/cell address is constant,
             //no matter where the cell appears onscreen.
-            if (col < 2) {
+            if (grid.getCellAt(row, col).setInternally) {
                 return false;
             } else {
                 return true;
@@ -99,15 +154,21 @@ public class GridDisplay extends JPanel {
         public void setValueAt(Object value, int row, int col) {
             if (DEBUG) {
                 System.out.println("Setting value at " + row + "," + col
-                                   + " to " + value
-                                   + " (an instance of "
-                                   + value.getClass() + ")");
+                                   + " to " + value);
             }
 
-            if (Integer.parseInt(value)){
-                return;
+            if (value != null){
+                if (!grid.checkValueValidInGrid(row, col, (Integer) value)){
+                    System.out.println("Invalid number placement");
+                    return;
+                }
+
+                if (grid.getCellAt(row, col).isEmpty()){
+                    grid.getCellAt(row, col).setValue((int) value);
+                }
             }
-            data[row][col] = value;
+            
+            data[row][col] = null;
             fireTableCellUpdated(row, col);
 
             if (DEBUG) {
@@ -123,12 +184,32 @@ public class GridDisplay extends JPanel {
             for (int i=0; i < numRows; i++) {
                 System.out.print("    row " + i + ":");
                 for (int j=0; j < numCols; j++) {
-                    System.out.print("  " + data[i][j]);
+                    System.out.print("  " + grid.getValueAt(i, j));
                 }
                 System.out.println();
             }
             System.out.println("--------------------------");
         }
+    }
+    
+    public void solve() throws Exception{
+        this.model.solve();
+    }
+    
+    /**
+     * Clear out the numbers; easier to do with a new grid.
+     */
+    public void clear(){
+        Grid grid = new Grid();
+        this.setGrid(grid);
+    }
+    
+    /**
+     * Make a grid with random numbers to be played.
+     */
+    public void startNewGame(){
+        Grid grid = new Grid(30);
+        this.setGrid(grid);
     }
 
     /**

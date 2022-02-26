@@ -3,7 +3,7 @@ package sudoku;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import static sudoku.Grid.getGroup;
+import static sudoku.Grid.getSquare;
 
 /**
  *
@@ -11,16 +11,16 @@ import static sudoku.Grid.getGroup;
  */
 public class Cell {
     public static final List<Integer> VALID_VALUES = Arrays.asList(new Integer[]{1,2,3,4,5,6,7,8,9});
-    public static final int EMPTY_VALUE = -1;
-    private int value = EMPTY_VALUE;
+    private Integer value = null;
     public int row;
     public int col;
-    public int group; // 3x3 groups
-    public List<Integer> potentialValues;
+    public int square; // 3x3 squares
+    private List<Integer> potentialValues;
+    boolean setInternally = false; // Whether the cell was set by the app or by the user/solver
     
     /**
      * Many new cells will be initialized empty and with only a row and column
-     * assigned, from which we can gather their group.
+     * assigned, from which we can gather their square.
      * @param row
      * @param col 
      */
@@ -29,7 +29,7 @@ public class Cell {
         assert(0 <= col && col < 9);
         this.row = row;
         this.col = col;
-        this.group = getGroup(row, col);
+        this.square = getSquare(row, col);
         potentialValues = new ArrayList<>(VALID_VALUES);
     }
     
@@ -54,11 +54,15 @@ public class Cell {
         this.potentialValues.clear();
     }
     
-    public int getValue(){
+    public Integer getValue(){
         return this.value;
     }
     
     public boolean isEmpty(){
-        return (this.value == EMPTY_VALUE);
+        return (this.value == null);
+    }
+    
+    public List<Integer> getPotentialValues(){
+        return potentialValues;
     }
 }
