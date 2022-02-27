@@ -4,6 +4,9 @@
  */
 package sudoku;
 
+import sudoku.grid.Cell;
+import sudoku.grid.Grid;
+import sudoku.grid.CellGroup;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import org.junit.After;

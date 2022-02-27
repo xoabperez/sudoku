@@ -4,6 +4,7 @@
  */
 package sudoku;
 
+import sudoku.grid.Cell;
 import java.util.List;
 import org.junit.After;
 import org.junit.AfterClass;

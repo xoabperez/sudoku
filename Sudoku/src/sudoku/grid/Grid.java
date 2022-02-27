@@ -1,4 +1,4 @@
-package sudoku;
+package sudoku.grid;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -6,6 +6,7 @@ import java.beans.PropertyChangeSupport;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,7 +15,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javafx.util.Pair;
-import sudoku.CellGroup.GroupType;
+import sudoku.grid.CellGroup.GroupType;
 
 /**
  * This class is used to store the sudoku grid. The values are of class {@Cell} 
@@ -83,6 +84,25 @@ public class Grid implements PropertyChangeListener {
     }
     
     /**
+     * Initialize a grid based on a given array input
+     * @param data 
+     */
+    public Grid(Integer[][] data) throws Exception{
+        this();
+        for (int row = 0; row < data.length; row++){
+            for (int col = 0; col < data[0].length; col++){
+                if (data[row][col] != null){
+                    Cell cell = getCellAt(row, col);
+                    setCellValueInternally(cell, data[row][col]);
+                    
+                    emptyCells.remove(new Pair(row, col));
+                    filledCells.put(new Pair(row,col), cell.getValue());
+                }
+            }
+        }
+    }
+    
+    /**
      * Initialize a grid with some number of entries filled randomly (random
      * locations as well as random (but valid) values). 
      * @param numberOfEntries 
@@ -111,10 +131,11 @@ public class Grid implements PropertyChangeListener {
                 int value = rand.nextInt(9) + 1;
 
                 // We may not be successful based on whether placement is valid.
-                if (setCellValue(row, col, value)){
-                    this.getCellAt(row, col).setInternally = true;
+                if (checkValueValidInGrid(row, col, value)){
+                    setCellValueInternally(this.getCellAt(row, col), value);
                     i++;
                     emptyCellInds.remove(cellNum);
+
                     emptyCells.remove(new Pair(row, col));
                     filledCells.put(new Pair(row,col), value);
                 }
@@ -122,25 +143,6 @@ public class Grid implements PropertyChangeListener {
         } catch (Exception ex){
             System.out.println("Unable to set random cell values");
             System.exit(-2);
-        }
-    }
-    
-    /**
-     * Setting the value of a cell if it's valid.
-     * @param row
-     * @param col
-     * @param value 
-     * @return whether the operation was successful
-     */
-    public boolean setCellValue(int row, int col, int value) throws Exception{
-        if (checkValueValidInGrid(row, col, value)){
-            Cell cell = gridRows[row].getCell(col);
-            setCellValue(cell, value);
-            return true;
-        } else {
-            System.out.println("Filling cell (" + row + "," + col + ") with " + 
-                                value + " is an invalid operation.");
-            return false;
         }
     }
     
@@ -199,8 +201,9 @@ public class Grid implements PropertyChangeListener {
      *    only 1 cell that can hold it.
      */
     public void solve1() throws Exception{
+        System.out.println("Attempting to solve.");
         int iteration = 0;
-        int previousSolves = 1;
+        Integer previousCellsSolved = null;
         while (!emptyCells.isEmpty()){
             int numEmptyCells = emptyCells.size();
             
@@ -211,15 +214,9 @@ public class Grid implements PropertyChangeListener {
                 int col = (int) rowColPair.getValue();
                 Cell cell = this.getCellAt(row, col);
                 
-                List<Integer> potentialValues = cell.getPotentialValues();
-                for (int i = potentialValues.size() - 1; i >= 0; i--){
-                    int val = potentialValues.get(i);
-                    if (!checkValueValidInGrid(row, col, val)){
-                        potentialValues.remove(i); 
-                    }
-                }
+                List<Integer> potentialValues = cell.potentialValues;
                 if (potentialValues.size() == 1){
-                    if (setCellValue(cell.row, cell.col, potentialValues.get(0))){
+                    if (setCellValueInternally(cell, potentialValues.get(0))){
                         it.remove();
                     } else {
                         System.out.println("We've got a problem. Trying to add" + 
@@ -230,41 +227,60 @@ public class Grid implements PropertyChangeListener {
             }
             
             // Step 2. is done by the groups
+            HashSet<Pair> removedCells = new HashSet<>();
             for (CellGroup group : gridRows){
-                group.lookForMissingValues();
+                removedCells.addAll(group.lookForMissingValues());
             }
             for (CellGroup group : gridCols){
-                group.lookForMissingValues();
+                removedCells.addAll(group.lookForMissingValues());
             }
             for (CellGroup group : gridSquares){
-                group.lookForMissingValues();
+                removedCells.addAll(group.lookForMissingValues());
             }
+            
+            emptyCells.removeAll(removedCells);
             
             int currentSolves = numEmptyCells - emptyCells.size();
             
             System.out.println("At the end of iteration " + iteration + " " +
-                               currentSolves + " cells have been solved");
+                               currentSolves + ", cells have been solved");
             
-            if (currentSolves == 0 && previousSolves == 0){
+            if (currentSolves == 0 && previousCellsSolved == 0){
                 System.out.println("Two rounds without solves - probably won't solve it now");
                 break;
             }
             
-            previousSolves = currentSolves;
+            previousCellsSolved = currentSolves;
             
             iteration++;
         }
     }
     
     /**
-     * When we update the cell's value, we should also update the cell groups
-     * it's in and let the display know to fill the cell
+     * Try to set the value internally, meaning we should be more confident
+     * in its correctness (but check just in case). 
      * @param cell
      * @param value 
      */
-    private void setCellValue(Cell cell, int value) throws Exception{
-        cell.setValue(value);
+    private boolean setCellValueInternally(Cell cell, int value) throws Exception{
+        if (!checkValueValidInGrid(cell.row, cell.col, value)){
+            System.out.println("Value " + value + " is invalid for cell " + cell.toString());
+            return false;
+        }
         
+        cell.setValue(value);
+        cell.setInternally = true;
+        
+        // When we update the cell's value, we should also 
+        // update the cell groups it's in and let the display know to fill the cell
+        removedCellUpdateGrid(cell, value);
+        
+        propChangeSupport.firePropertyChange(NEW_CELL_VALUE, null, cell);
+        
+        return true;
+    }
+    
+    private void removedCellUpdateGrid(Cell cell, int value) throws Exception{            
         // TODO: is there a better way than doing this manually? Fire a property
         // change from within the cell and have all groups listen to their cells
         // for such a change? That's a lot of listening going on
@@ -273,8 +289,6 @@ public class Grid implements PropertyChangeListener {
         int square = getSquare(cell.row, cell.col);
         int position = getSquarePosition(cell.row, cell.col);
         gridSquares[square].clearValueFromCells(position, value);
-        
-        propChangeSupport.firePropertyChange(NEW_CELL_VALUE, null, cell);
     }
     
     public Cell getCellAt(int row, int col){
@@ -319,11 +333,19 @@ public class Grid implements PropertyChangeListener {
         if (pce.getPropertyName() == NEW_CELL_VALUE){
             Cell cell = (Cell) pce.getNewValue();
             try{
-                setCellValue(cell, cell.getValue());
+                removedCellUpdateGrid(cell, cell.getValue());
             } catch (Exception ex){
                 System.out.println("Error trying to set (" + cell.row + "," + 
                         cell.col + ") to " + cell.getValue());
             }
         }
+    }
+    
+    public HashSet<Pair> getEmptyCells(){
+        return emptyCells;
+    }
+    
+    public HashMap<Pair, Integer> getFilledCells(){
+        return filledCells;
     }
 }

@@ -1,12 +1,14 @@
-package sudoku;
+package sudoku.grid;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import static sudoku.Grid.NEW_CELL_VALUE;
+import javafx.util.Pair;
+import static sudoku.grid.Grid.NEW_CELL_VALUE;
 
 /**
  * A group of 9 cells - either a row group, column group, or square group.
@@ -94,7 +96,7 @@ public class CellGroup {
     public void clearValueFromCells(int position, int value) throws Exception{
         addFoundValue(position, value);
         for (Integer ind : emptyCellInds){
-            cells[ind].getPotentialValues().remove((Object) value);
+            cells[ind].potentialValues.remove((Object) value);
         }
     }
     
@@ -114,13 +116,14 @@ public class CellGroup {
      * Within the group, check if there is only one empty cell that can house
      * any of the missing values.
      */ 
-    public void lookForMissingValues(){
+    public HashSet<Pair> lookForMissingValues(){
+        HashSet<Pair> removedCells = new HashSet<>();
         for (Iterator it = missingValues.iterator(); it.hasNext();){
             int value = (Integer) it.next();
             int numValidCells = 0;
             Integer lastValidCell = null;
             for (Integer ind : emptyCellInds){
-                if (getCell(ind).getPotentialValues().contains(value)){
+                if (getCell(ind).potentialValues.contains(value)){
                     numValidCells++;
                     lastValidCell = ind;
                 }
@@ -129,10 +132,13 @@ public class CellGroup {
             // Update the cell and let everybody else know.
             if (numValidCells == 1){
                 it.remove();
-                getCell(lastValidCell).setValue(value);
-                propChangeSupport.firePropertyChange(NEW_CELL_VALUE, null, getCell(lastValidCell));
+                Cell cell = getCell(lastValidCell);
+                cell.setValue(value);
+                removedCells.add(new Pair(cell.row, cell.col));
+                propChangeSupport.firePropertyChange(NEW_CELL_VALUE, null, cell);
             }
         }
+        return removedCells;
     }
     
     public void addPropertyChangeListener(PropertyChangeListener pcl){

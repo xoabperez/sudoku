@@ -4,6 +4,8 @@
  */
 package sudoku;
 
+import sudoku.grid.Cell;
+import sudoku.grid.CellGroup;
 import java.beans.PropertyChangeListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,7 +16,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import sudoku.CellGroup.GroupType;
+import sudoku.grid.CellGroup.GroupType;
 
 /**
  *

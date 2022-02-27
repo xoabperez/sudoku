@@ -4,6 +4,8 @@
  */
 package sudoku;
 
+import sudoku.grid.Grid;
+import sudoku.display.SudokuPanel;
 import java.beans.PropertyChangeEvent;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -44,7 +46,7 @@ public class GridDisplayTest {
     public void testSetGrid() {
         System.out.println("setGrid");
         Grid grid = null;
-        GridDisplay instance = new GridDisplay();
+        SudokuPanel instance = new SudokuPanel();
         instance.setGrid(grid);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
@@ -57,7 +59,7 @@ public class GridDisplayTest {
     public void testPropertyChange() {
         System.out.println("propertyChange");
         PropertyChangeEvent pce = null;
-        GridDisplay instance = new GridDisplay();
+        SudokuPanel instance = new SudokuPanel();
         instance.propertyChange(pce);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
@@ -70,7 +72,7 @@ public class GridDisplayTest {
     public void testMain() {
         System.out.println("main");
         String[] args = null;
-        GridDisplay.main(args);
+        SudokuPanel.main(args);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
     }
