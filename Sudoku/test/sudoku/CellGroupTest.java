@@ -6,10 +6,6 @@ package sudoku;
 
 import sudoku.grid.Cell;
 import sudoku.grid.CellGroup;
-import java.beans.PropertyChangeListener;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,7 +36,7 @@ public class CellGroupTest {
     @Before
     public void setUp() throws Exception {
         // Add cells. No values since that'll muck things up when adding found value
-        instance = new CellGroup(GroupType.COL, 0);
+        instance = new CellGroup(GroupType.SQUARE, 0);
         for(int i = 0; i < 9; i++){
             Cell cell = new Cell(i, 0);
             instance.addCell(i, cell);
@@ -120,7 +116,7 @@ public class CellGroupTest {
     public void testClearValueFromCells() throws Exception {
         System.out.println("clearValueFromCells");
         instance.clearValueFromCells(0, 1);
-        assert(!instance.getCell(1).getPotentialValues().contains(1));
+        assert(!instance.getCell(1).potentialValues.contains(1));
     }
 
     

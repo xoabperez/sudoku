@@ -4,12 +4,12 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/StartGame.java</file>
-            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/Grid.java</file>
-            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/AppDisplay.java</file>
-            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/CellGroup.java</file>
-            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/GridDisplay.java</file>
-            <file>file:/home/xoab/repos/sudoku/Sudoku/test/sudoku/GridTest.java</file>
-            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/Cell.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/grid/Cell.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/grid/CellGroup.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/display/SudokuTableModel.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/display/SudokuTable.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/grid/Grid.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/display/SudokuDisplay.java</file>
         </group>
     </open-files>
 </project-private>

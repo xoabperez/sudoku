@@ -38,7 +38,8 @@ public class Grid implements PropertyChangeListener {
     public static String NEW_CELL_VALUE = "new cell value";
     
     /**
-     * Make an empty grid of cells, storing them in the arrangements above.
+     * Make an empty grid of cells, storing them in the arrangements above. This
+     * constructor MUST be used to get the cells in the right order in their groups
      */
     public Grid(){
         this.propChangeSupport = new PropertyChangeSupport(this);
@@ -47,6 +48,9 @@ public class Grid implements PropertyChangeListener {
         IntStream.range(0, 9).forEach(i -> gridCols[i] = new CellGroup(GroupType.COL, i));
         IntStream.range(0, 9).forEach(i -> gridSquares[i] = new CellGroup(GroupType.SQUARE, i));
         
+        // NOTE: to make the group solvers work, the cells MUST be placed in
+        // order - row groups have to be left to right, columns top to bottom,
+        // squares as shown below.
         try {
             for(int row = 0; row < 9; row++){
                 for(int col = 0; col < 9; col++){
@@ -94,11 +98,26 @@ public class Grid implements PropertyChangeListener {
                 if (data[row][col] != null){
                     Cell cell = getCellAt(row, col);
                     setCellValueInternally(cell, data[row][col]);
-                    
-                    emptyCells.remove(new Pair(row, col));
-                    filledCells.put(new Pair(row,col), cell.getValue());
                 }
             }
+        }
+    }
+    
+    /**
+     * Easy way of cloning a grid
+     * @param grid 
+     */
+    public Grid(Grid grid) throws Exception{
+        this();
+        for (HashMap.Entry entry : grid.filledCells.entrySet()){
+            Pair pair = (Pair) entry.getKey();
+            int value = (int) entry.getValue();
+            
+            int row = (int) pair.getKey();
+            int col = (int) pair.getValue();
+            
+            Cell cell = getCellAt(row, col);
+            setCellValueInternally(cell, value);
         }
     }
     
@@ -135,9 +154,6 @@ public class Grid implements PropertyChangeListener {
                     setCellValueInternally(this.getCellAt(row, col), value);
                     i++;
                     emptyCellInds.remove(cellNum);
-
-                    emptyCells.remove(new Pair(row, col));
-                    filledCells.put(new Pair(row,col), value);
                 }
             }
         } catch (Exception ex){
@@ -193,67 +209,11 @@ public class Grid implements PropertyChangeListener {
     }
     
     /** 
-     * Solve the puzzle! This is the based on how I might solve it
-     * 1. For all empty cells, determine their potential values based on other
-     *    values in their row/cell/square. If only one potential value is set,
-     *    that's the cell's value
-     * 2. Next, for each cell group, for each missing value, see if there's
-     *    only 1 cell that can hold it.
+     * Solve the puzzle! 
      */
-    public void solve1() throws Exception{
-        System.out.println("Attempting to solve.");
-        int iteration = 0;
-        Integer previousCellsSolved = null;
-        while (!emptyCells.isEmpty()){
-            int numEmptyCells = emptyCells.size();
-            
-            // Step 1.
-            for (Iterator<Pair> it = emptyCells.iterator(); it.hasNext();){
-                Pair rowColPair = it.next();
-                int row = (int) rowColPair.getKey();
-                int col = (int) rowColPair.getValue();
-                Cell cell = this.getCellAt(row, col);
-                
-                List<Integer> potentialValues = cell.potentialValues;
-                if (potentialValues.size() == 1){
-                    if (setCellValueInternally(cell, potentialValues.get(0))){
-                        it.remove();
-                    } else {
-                        System.out.println("We've got a problem. Trying to add" + 
-                                potentialValues.get(0) + " to (" + row + "," + col +")");
-                        throw new Exception();
-                    }
-                }
-            }
-            
-            // Step 2. is done by the groups
-            HashSet<Pair> removedCells = new HashSet<>();
-            for (CellGroup group : gridRows){
-                removedCells.addAll(group.lookForMissingValues());
-            }
-            for (CellGroup group : gridCols){
-                removedCells.addAll(group.lookForMissingValues());
-            }
-            for (CellGroup group : gridSquares){
-                removedCells.addAll(group.lookForMissingValues());
-            }
-            
-            emptyCells.removeAll(removedCells);
-            
-            int currentSolves = numEmptyCells - emptyCells.size();
-            
-            System.out.println("At the end of iteration " + iteration + " " +
-                               currentSolves + ", cells have been solved");
-            
-            if (currentSolves == 0 && previousCellsSolved == 0){
-                System.out.println("Two rounds without solves - probably won't solve it now");
-                break;
-            }
-            
-            previousCellsSolved = currentSolves;
-            
-            iteration++;
-        }
+    public boolean solve1() throws Exception{
+        MySolver solver = new MySolver(this);
+        return solver.solve();
     }
     
     /**
@@ -262,7 +222,7 @@ public class Grid implements PropertyChangeListener {
      * @param cell
      * @param value 
      */
-    private boolean setCellValueInternally(Cell cell, int value) throws Exception{
+    boolean setCellValueInternally(Cell cell, int value) throws Exception{
         if (!checkValueValidInGrid(cell.row, cell.col, value)){
             System.out.println("Value " + value + " is invalid for cell " + cell.toString());
             return false;
@@ -271,6 +231,9 @@ public class Grid implements PropertyChangeListener {
         cell.setValue(value);
         cell.setInternally = true;
         
+        emptyCells.remove(new Pair(cell.row, cell.col));
+        filledCells.put(new Pair(cell.row,cell.col), value);
+                    
         // When we update the cell's value, we should also 
         // update the cell groups it's in and let the display know to fill the cell
         removedCellUpdateGrid(cell, value);

@@ -1,20 +1,23 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package sudoku.display;
 
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.border.LineBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.table.TableCellRenderer;
 import sudoku.grid.Cell;
+import static sudoku.grid.Cell.VALID_VALUES;
 import sudoku.grid.Grid;
 
 /**
@@ -28,13 +31,14 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
     public SudokuTable(){
         model = new SudokuTableModel();
         this.setModel(model);
+        this.setDefaultEditor(Integer.class, new SudokuEditor());
     }
     
     @Override
     public TableCellRenderer getCellRenderer(int row, int column) {
         return new SudokuRenderer();
     };
-    
+
     /**
      * Set the grid for the game, meaning we should display its values.
      * @param grid 
@@ -138,6 +142,119 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
             }
 
             return this;
+        }
+    }
+    
+    /**
+     * A custom editor specific to sudoku - make sure the text is centered
+     * and normal size, inform user if value doesn't fit.
+     */
+    public class SudokuEditor extends DefaultCellEditor{
+        SudokuEditor(){
+            super(new JTextField());
+
+            // Listen for inputs to show immediate feedback based on user input
+            this.editorComponent.addKeyListener(new KeyListener(){
+                @Override
+                public void keyTyped(KeyEvent ke) {
+                    return; // We'll check the actual text
+                }
+
+                @Override
+                public void keyPressed(KeyEvent ke) {
+                    return; // We'll check the actual text
+                }
+
+                @Override
+                public void keyReleased(KeyEvent ke) {
+                    checkInput();
+                }
+            });
+
+        }
+
+        /**
+         * Don't allow an invalid value.
+         * @return 
+         */
+        public boolean stopCellEditing(){
+            SudokuTable table = (SudokuTable)getComponent().getParent();
+
+            if (checkInput()){
+                return super.stopCellEditing();
+            } else {
+                return false;
+            }
+        }
+        
+        // If an invalid value is entered - if it's not an integer, don't allow
+        // it, otherwise check if it's a valid value
+        private boolean checkInput(){
+            // We'll use the table to check the input
+            SudokuTable table = (SudokuTable)getComponent().getParent();
+
+            String text = (String) getCellEditorValue(); 
+            
+            // We're okay with null value
+            if (text == ""){
+                showCellOkay();
+                return true;
+            }
+            
+            // We might get an error if the input isn't an integer
+            int editingValue;
+            try{
+                editingValue = Integer.parseInt(text);
+                int row = table.getEditingRow();
+                int col = table.getEditingColumn();
+
+                if(!VALID_VALUES.contains(editingValue) ||
+                   !table.model.grid.checkValueValidInGrid(row, col, editingValue)){
+                    showCellError();
+                    return false;
+                } else {
+                    showCellOkay();
+                    return true;
+                }
+            } catch(NumberFormatException ex){
+                showCellError();
+                return false;
+            }
+        }
+
+        /**
+         * Not doing anything too fancy for the editor - just make it similar
+         * to filled cell look.
+         * @param table
+         * @param value
+         * @param isSelected
+         * @param row
+         * @param column
+         * @return 
+         */
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                    boolean isSelected, int row, int column){
+            Component c = super.getTableCellEditorComponent(table, value, isSelected, row, column);
+            c.setFont(new Font("SansSerif", Font.PLAIN, 18));
+            ((JTextField)c).setHorizontalAlignment(JTextField.CENTER);
+            ((JComponent)c).setBorder(new LineBorder(Color.black));
+
+            return c;
+        }
+        
+        // If the cell input is okay, don't show anything alarming
+        public void showCellOkay(){
+            JTextField textField = (JTextField)getComponent();
+            textField.setBorder(new LineBorder(Color.black));
+            textField.requestFocusInWindow();
+        }
+               
+        // If the cell input is bad, show a red border to warn the user
+        public void showCellError(){
+            JTextField textField = (JTextField)getComponent();
+            textField.setBorder(new LineBorder(Color.red));
+            textField.selectAll();
+            textField.requestFocusInWindow();
         }
     }
 }
