@@ -2,8 +2,9 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/JUnit4TestClass.java to edit this template
  */
-package sudoku;
+package sudoku.grid;
 
+import java.util.HashMap;
 import sudoku.grid.Cell;
 import sudoku.grid.CellGroup;
 import org.junit.After;
@@ -102,8 +103,8 @@ public class CellGroupTest {
                 instance.clearValueFromCells(i, i+1);
             }
             
-            instance.lookForMissingValues();
-            assert(instance.getCell(8).getValue() == 9);
+            HashMap<Cell, Integer> cellsToRemove = instance.lookForMissingValues();
+            assert(cellsToRemove.get(instance.getCell(8)) == 9);
         } catch (Exception ex) {
             fail("Exception in this test");
         }

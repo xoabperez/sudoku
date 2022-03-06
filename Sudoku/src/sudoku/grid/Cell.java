@@ -53,6 +53,7 @@ public class Cell {
         return (this.value == null);
     }
     
+    @Override
     public String toString(){
         String string = new String();
         string.concat("row " + this.row + " col " + this.col + " square " + this.square + "\n");

@@ -55,7 +55,8 @@ public class SudokuDisplay extends javax.swing.JFrame {
         testData[8][0] = 8;
         testData[8][5] = 6;
 
-        sudokuTable.setGrid(new Grid(testData));
+        Grid testGrid = new Grid(testData);
+        sudokuTable.setGrid(testGrid);
     }
 
     /**
@@ -168,7 +169,11 @@ public class SudokuDisplay extends javax.swing.JFrame {
     }//GEN-LAST:event_clearGridButtonActionPerformed
 
     private void newGameButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newGameButtonActionPerformed
-        sudokuTable.startNewGame();
+        try {
+            sudokuTable.startNewGame();
+        } catch (Exception ex) {
+            System.out.println("Unable to start a new game");
+        }
     }//GEN-LAST:event_newGameButtonActionPerformed
 
     private void setGridButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_setGridButtonActionPerformed

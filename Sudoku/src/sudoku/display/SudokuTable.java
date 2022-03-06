@@ -26,7 +26,7 @@ import sudoku.grid.Grid;
  */
 public class SudokuTable extends JTable implements PropertyChangeListener {
     
-    private SudokuTableModel model;
+    private final SudokuTableModel model;
     
     public SudokuTable(){
         model = new SudokuTableModel();
@@ -72,8 +72,9 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
     
     /**
      * Make a grid with random numbers to be played.
+     * @throws java.lang.Exception
      */
-    public void startNewGame(){
+    public void startNewGame() throws Exception{
         Grid grid = new Grid(30);
         this.setGrid(grid);
     }
@@ -96,6 +97,7 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
             setHorizontalAlignment(SwingConstants.CENTER);
         }
 
+        @Override
         public Component getTableCellRendererComponent(
                                 JTable table, Object color,
                                 boolean isSelected, boolean hasFocus,
@@ -157,12 +159,10 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
             this.editorComponent.addKeyListener(new KeyListener(){
                 @Override
                 public void keyTyped(KeyEvent ke) {
-                    return; // We'll check the actual text
                 }
 
                 @Override
                 public void keyPressed(KeyEvent ke) {
-                    return; // We'll check the actual text
                 }
 
                 @Override
@@ -177,9 +177,8 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
          * Don't allow an invalid value.
          * @return 
          */
+        @Override
         public boolean stopCellEditing(){
-            SudokuTable table = (SudokuTable)getComponent().getParent();
-
             if (checkInput()){
                 return super.stopCellEditing();
             } else {
@@ -196,7 +195,7 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
             String text = (String) getCellEditorValue(); 
             
             // We're okay with null value
-            if (text == ""){
+            if (text.equals("")){
                 showCellOkay();
                 return true;
             }
@@ -232,6 +231,7 @@ public class SudokuTable extends JTable implements PropertyChangeListener {
          * @param column
          * @return 
          */
+        @Override
         public Component getTableCellEditorComponent(JTable table, Object value,
                                     boolean isSelected, int row, int column){
             Component c = super.getTableCellEditorComponent(table, value, isSelected, row, column);

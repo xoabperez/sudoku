@@ -6,7 +6,6 @@ import java.beans.PropertyChangeSupport;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,7 +13,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javafx.util.Pair;
 import sudoku.grid.CellGroup.GroupType;
 
 /**
@@ -23,7 +21,7 @@ import sudoku.grid.CellGroup.GroupType;
  * different arrangements to help with solving.
  * @author xoab
  */
-public class Grid implements PropertyChangeListener {
+public final class Grid implements PropertyChangeListener {
     // 3 arrangements of the sudoku grid: by rows, by cols, and by 3x3 squares
     CellGroup[] gridRows = new CellGroup[9];
     CellGroup[] gridCols = new CellGroup[9];
@@ -38,8 +36,9 @@ public class Grid implements PropertyChangeListener {
     public static String NEW_CELL_VALUE = "new cell value";
     
     /**
-     * Make an empty grid of cells, storing them in the arrangements above. This
-     * constructor MUST be used to get the cells in the right order in their groups
+     * Make an empty grid of cells, storing them by row/col/square. This
+     * constructor MUST be used to get the cells in the right order in their 
+     * groups.
      */
     public Grid(){
         this.propChangeSupport = new PropertyChangeSupport(this);
@@ -74,22 +73,13 @@ public class Grid implements PropertyChangeListener {
             System.out.println("Unable to add cells to grid. Exiting");
             System.exit(-1);
         }
-        
-        // Step 2. is done by the groups
-        for (CellGroup group : gridRows){
-            group.addPropertyChangeListener(this);
-        }
-        for (CellGroup group : gridCols){
-            group.addPropertyChangeListener(this);
-        }
-        for (CellGroup group : gridSquares){
-            group.addPropertyChangeListener(this);
-        }
     }
     
     /**
-     * Initialize a grid based on a given array input
+     * Initialize a grid based on a given array input, assuming that the
+     * indices are data[row][col]
      * @param data 
+     * @throws java.lang.Exception 
      */
     public Grid(Integer[][] data) throws Exception{
         this();
@@ -106,6 +96,7 @@ public class Grid implements PropertyChangeListener {
     /**
      * Easy way of cloning a grid
      * @param grid 
+     * @throws java.lang.Exception 
      */
     public Grid(Grid grid) throws Exception{
         this();
@@ -113,8 +104,8 @@ public class Grid implements PropertyChangeListener {
             Pair pair = (Pair) entry.getKey();
             int value = (int) entry.getValue();
             
-            int row = (int) pair.getKey();
-            int col = (int) pair.getValue();
+            int row = (int) pair.getRow();
+            int col = (int) pair.getCol();
             
             Cell cell = getCellAt(row, col);
             setCellValueInternally(cell, value);
@@ -125,17 +116,35 @@ public class Grid implements PropertyChangeListener {
      * Initialize a grid with some number of entries filled randomly (random
      * locations as well as random (but valid) values). 
      * @param numberOfEntries 
+     * @throws java.lang.Exception 
      */
-    public Grid(int numberOfEntries){
+    public Grid(int numberOfEntries) throws Exception{
         this(); // Start with an empty grid
+        
+        // Seed the random number generator
+        Random rand = new Random(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
+        
+        // Make a fully correct grid, then we'll take off values
+        for (CellGroup square : this.gridSquares){
+            // Avoid concurrent modification exception by cloning
+            ArrayList<Integer> emptyInds = (ArrayList) square.emptyCellInds.clone();
+            
+            // For each empty cell, set it to a value from its potential values
+            for (Iterator it = emptyInds.iterator(); it.hasNext();){
+                int position = (int) it.next();
+                List<Integer> potentialVals = square.getCell(position).potentialValues;
+                
+                // Pick some random index from the list of potential values
+                int value = rand.nextInt(potentialVals.size());
+                setCellValueInternally(square.getCell(position), potentialVals.get(value));
+                it.remove();
+            }
+        }
         
         // Get cells at random from list of empty ones
         ArrayList<Integer> emptyCellInds = 
             new ArrayList<>(IntStream.range(0, 81).
                     mapToObj(Integer::new).collect(Collectors.toList()));
-        
-        // Seed the random number generator
-        Random rand = new Random(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
         
         try {
             // Try to set random cells; hopefully # of entries is small enough that
@@ -173,43 +182,15 @@ public class Grid implements PropertyChangeListener {
     public boolean checkValueValidInGrid(int row, int col, int value){
         boolean validValue = (0 < value && value <= 9);
         return (validValue && 
-                checkValueValidInRow(gridRows[row], value) &&
-                checkValueValidInCol(gridCols[col], value) && 
-                checkValueValidInSquare(gridSquares[getSquare(row, col)], value));
-    }
-    
-    /**
-     * Check whether a value can be placed in a row, i.e. it's not already in the row.
-     * @param cellRow
-     * @param value
-     * @return 
-     */
-    public boolean checkValueValidInRow(CellGroup cellRow, Integer value){
-        return !cellRow.containsValue(value);
-    }
-    
-    /**
-     * Check whether a value can be placed in a column.
-     * @param cellCol
-     * @param value
-     * @return 
-     */
-    public boolean checkValueValidInCol(CellGroup cellCol, Integer value){
-        return !cellCol.containsValue(value);
-    }
-    
-    /**
-     * Check whether a value can be placed in a square.
-     * @param cellSquare
-     * @param value
-     * @return 
-     */
-    public boolean checkValueValidInSquare(CellGroup cellSquare, Integer value){
-        return !cellSquare.containsValue(value);
+                !gridRows[row].containsValue(value) &&
+                !gridCols[col].containsValue(value) && 
+                !gridSquares[getSquare(row, col)].containsValue(value));
     }
     
     /** 
      * Solve the puzzle! 
+     * @return 
+     * @throws java.lang.Exception
      */
     public boolean solve1() throws Exception{
         MySolver solver = new MySolver(this);
@@ -293,7 +274,7 @@ public class Grid implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent pce) {
-        if (pce.getPropertyName() == NEW_CELL_VALUE){
+        if (pce.getPropertyName().equals(NEW_CELL_VALUE)){
             Cell cell = (Cell) pce.getNewValue();
             try{
                 removedCellUpdateGrid(cell, cell.getValue());

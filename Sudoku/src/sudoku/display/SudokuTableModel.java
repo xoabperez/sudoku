@@ -8,35 +8,38 @@ import sudoku.grid.Grid;
  */
 public class SudokuTableModel extends AbstractTableModel {
 
-    private String[] columnNames = null;
     public Object data[][] = new Integer[9][9];
     Grid grid = new Grid();
 
     /**
-     * Set the grid based on the gui
+     * Set the underlying grid based on the gui.
      */
     public void setGrid() {
         try {
-            Grid grid = new Grid((Integer[][]) this.data);
-            this.grid = grid;
+            Grid newGrid = new Grid((Integer[][]) this.data);
+            this.grid = newGrid;
         } catch (Exception ex) {
             System.out.println("Unable to set the grid based on input");
         }
     }
 
+    /**
+     * Set both the underlying grid and the GUI grid to some input grid.
+     * @param grid 
+     */
     public void setGrid(Grid grid) {
         this.grid = grid;
 
         // Need to clear out some values and set others;
         grid.getEmptyCells().forEach((pair) -> {
-            Integer row = (int) pair.getKey();
-            Integer col = (int) pair.getValue();
+            Integer row = (int) pair.getRow();
+            Integer col = (int) pair.getCol();
 
             setValueAt(null, row, col);
         });
         grid.getFilledCells().forEach((pair, value) -> {
-            Integer row = (int) pair.getKey();
-            Integer col = (int) pair.getValue();
+            Integer row = (int) pair.getRow();
+            Integer col = (int) pair.getCol();
 
             setValueAt(value, row, col);
         });
@@ -46,43 +49,66 @@ public class SudokuTableModel extends AbstractTableModel {
         this.grid.solve1();
     }
 
+    /**
+     * We'll always have 9 rows and 9 columns in sudoku
+     * @return 9
+     */
+    @Override
     public int getColumnCount() {
         return 9;
     }
 
+    /**
+     * We'll always have 9 rows and 9 columns in sudoku
+     * @return 9
+     */
+    @Override
     public int getRowCount() {
         return 9;
     }
 
+    /**
+     * We don't need column names for the sudoku grid.
+     * @param col
+     * @return
+     */
+    @Override
     public String getColumnName(int col) {
         return null;
     }
 
+    @Override
     public Object getValueAt(int row, int col) {
         Object val = (grid.getValueAt(row, col) == null) ? null : grid.getValueAt(row, col);
         return grid.getValueAt(row, col);
     }
 
+    @Override
     public Class getColumnClass(int c) {
         return Integer.class;
     }
 
+    /**
+     * We'll determine whether a cell is editable based on whether the value
+     * was set as part of the initial grid.
+     * @param row
+     * @param col
+     * @return 
+     */
+    @Override
     public boolean isCellEditable(int row, int col) {
         //Note that the data/cell address is constant,
         //no matter where the cell appears onscreen.
-        if (grid.getCellAt(row, col).isSetInternally()) {
-            return false;
-        } else {
-            return true;
-        }
+        return !grid.getCellAt(row, col).isSetInternally();
     }
 
     /**
-     *
+     * Before the set the value of a cell, we'll need to do some checks.
      * @param value
      * @param row
      * @param col
      */
+    @Override
     public void setValueAt(Object value, int row, int col) {
         // The value will be null if we're clearing the cell
         if (value != null) {

@@ -2,13 +2,10 @@ package sudoku;
 
 import sudoku.display.SudokuDisplay;
 
-/**
- *
- * @author xoab
- */
 public class StartGame {
 
     /**
+     * Start the game by displaying the GUI.
      * @param args the command line arguments
      */
     public static void main(String[] args) {       
@@ -16,6 +13,8 @@ public class StartGame {
         display.pack();
         display.setVisible(true);
         
+        // For now, I only have 1 grid to test with; need to be able to make 
+        // new ones
         try {
             display.test();
         } catch (Exception ex) {

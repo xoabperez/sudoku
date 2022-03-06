@@ -6,9 +6,11 @@
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/StartGame.java</file>
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/grid/Cell.java</file>
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/grid/CellGroup.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/grid/MySolver.java</file>
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/display/SudokuTableModel.java</file>
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/display/SudokuTable.java</file>
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/grid/Grid.java</file>
+            <file>file:/home/xoab/repos/sudoku/Sudoku/test/sudoku/CellTest.java</file>
             <file>file:/home/xoab/repos/sudoku/Sudoku/src/sudoku/display/SudokuDisplay.java</file>
         </group>
     </open-files>

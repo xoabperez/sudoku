@@ -4,10 +4,11 @@
  */
 package sudoku.grid;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import javafx.util.Pair;
+import java.util.Map.Entry;
 
 /**
  * This is the based on how I might solve it.
@@ -16,12 +17,13 @@ import javafx.util.Pair;
  *    that's the cell's value
  * 2. Next, for each cell group, for each missing value, see if there's
  *    only 1 cell that can hold it.
- * 3. This step is tricky - check a square group for having a value that must go
- *    into a single row/column - then it can't go elsewhere in the row/column
+ * 3. Other techniques that seem tricky to implement, so do something else
+ * Once we haven't found any new values by steps 1 or 2, we can guess the value 
+ * for a single cell and try to solve then; do this recursively until solved.
  */
 public class MySolver {
     
-    private Grid grid;
+    private final Grid grid;
     
     public MySolver(Grid grid){
         this.grid = grid;
@@ -32,6 +34,8 @@ public class MySolver {
     // guessing, we may get failures
     public boolean solve() throws Exception{
         System.out.println("Attempting to solve.");
+        long startTime = System.nanoTime();
+        
         int iteration = 0;
         int previousCellsSolved = 0;
         boolean solved = true;
@@ -64,7 +68,13 @@ public class MySolver {
             iteration++;
         }
         
-        return (solved && grid.emptyCells.size() == 0);
+        long endTime = System.nanoTime();
+
+        double duration = (endTime - startTime)/1000000;  //divide by 1000000 to get milliseconds.
+        
+        System.out.println("Solved in " + duration + " milliseconds");
+        
+        return (solved && grid.emptyCells.isEmpty());
     }
     
     /**
@@ -80,7 +90,7 @@ public class MySolver {
         // and it'll probably be a mess and crash from OOM
         Cell bestCell = this.grid.getCellAt(0,0); 
         for (Pair rowColPair : this.grid.emptyCells){
-            Cell cell = this.grid.getCellAt((int) rowColPair.getKey(), (int)rowColPair.getValue());
+            Cell cell = this.grid.getCellAt((int) rowColPair.getRow(), (int)rowColPair.getCol());
             if (cell.potentialValues.size() < smallestNumPotentialValues){
                 smallestNumPotentialValues = cell.potentialValues.size();
                 bestCell = cell;
@@ -97,8 +107,8 @@ public class MySolver {
             if (testGrid.solve1()){
                 HashSet<Pair> formerlyEmptyCells = (HashSet<Pair>) this.grid.emptyCells.clone();
                 for (Pair rowColPair : formerlyEmptyCells){
-                    int row = (int) rowColPair.getKey();
-                    int col = (int) rowColPair.getKey();
+                    int row = (int) rowColPair.getRow();
+                    int col = (int) rowColPair.getCol();
                     Cell solvedCell = testGrid.getCellAt(row, col);
                     Cell cellToFill = this.grid.getCellAt(row, col);
                     this.grid.setCellValueInternally(cellToFill, solvedCell.getValue());
@@ -119,8 +129,8 @@ public class MySolver {
         HashSet<Pair> emptyCells = (HashSet<Pair>) grid.emptyCells.clone();
         for (Iterator<Pair> it = emptyCells.iterator(); it.hasNext();){
             Pair rowColPair = it.next();
-            int row = (int) rowColPair.getKey();
-            int col = (int) rowColPair.getValue();
+            int row = (int) rowColPair.getRow();
+            int col = (int) rowColPair.getCol();
             Cell cell = grid.getCellAt(row, col);
 
             List<Integer> potentialValues = cell.potentialValues;
@@ -132,7 +142,7 @@ public class MySolver {
                             potentialValues.get(0) + " to (" + row + "," + col +")");
                     return false;
                 }
-            } else if (potentialValues.size() == 0){
+            } else if (potentialValues.isEmpty()){
                 System.out.println("We've got a problem. (" + row + "," + col +")"
                                     + " has no potential values possible");
                 return false;
@@ -147,22 +157,20 @@ public class MySolver {
      * @return 
      */
     private boolean checkGroupsForMissingValues() throws Exception{
-        HashSet<Pair> cellsToRemove = new HashSet<>();
+        HashMap<Cell, Integer> cellsToRemove = new HashMap<>();
         for (CellGroup group : grid.gridRows){
-            cellsToRemove.addAll(group.lookForMissingValues());
+            cellsToRemove.putAll(group.lookForMissingValues());
         }
         for (CellGroup group : grid.gridCols){
-            cellsToRemove.addAll(group.lookForMissingValues());
+            cellsToRemove.putAll(group.lookForMissingValues());
         }
         for (CellGroup group : grid.gridSquares){
-            cellsToRemove.addAll(group.lookForMissingValues());
+            cellsToRemove.putAll(group.lookForMissingValues());
         }
         
-        for (Iterator<Pair> it = cellsToRemove.iterator(); it.hasNext();){
-            Pair cellValuePair = it.next();
-            Cell cell = (Cell) cellValuePair.getKey();
-            int value = (int) cellValuePair.getValue();
-            
+        for (Entry<Cell, Integer> entry : cellsToRemove.entrySet()){
+            Cell cell = entry.getKey();
+            int value = (int) entry.getValue();
             if (!grid.setCellValueInternally(cell, value)){
                 System.out.println("We've got a problem. Trying to add " + 
                         value + " to (" + cell.row + "," + cell.col +")");
@@ -171,10 +179,4 @@ public class MySolver {
         }
         return true;
     }
-    
-//    private void checkValuesMustGoInGroup(){
-//        for (CellGroup group : grid.gridSquares){
-//            //removedCells.addAll(group.lookForMissingValues());
-//        }
-//    }
 }
