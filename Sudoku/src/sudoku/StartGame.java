@@ -6,7 +6,7 @@ public class StartGame {
 
     /**
      * Start the game by displaying the GUI.
-     * @param args the command line arguments
+     * @param args the command line arguments, unused
      */
     public static void main(String[] args) {       
         SudokuDisplay display = new SudokuDisplay();

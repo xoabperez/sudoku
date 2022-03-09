@@ -6,8 +6,8 @@ import java.util.List;
 import static sudoku.grid.Grid.getSquare;
 
 /**
- *
- * @author xoab
+ * The class of a specific cell at a row/col location, which can contain an
+ * integer value from 1-9.
  */
 public class Cell {
     public static final List<Integer> VALID_VALUES = Arrays.asList(new Integer[]{1,2,3,4,5,6,7,8,9});

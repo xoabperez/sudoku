@@ -1,12 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/JUnit4TestClass.java to edit this template
- */
 package sudoku.grid;
 
 import java.util.HashMap;
-import sudoku.grid.Cell;
-import sudoku.grid.CellGroup;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
