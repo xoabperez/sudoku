@@ -16,7 +16,7 @@ public class Cell {
     public int col;
     public int square; // 3x3 squares
     public List<Integer> potentialValues;
-    boolean setInternally = false; // Whether the cell was set by the app or by the user/solver
+    boolean isSetByGame = false; // Whether the cell was set by the app or by the user/solver
     
     /**
      * Cells should be initialized empty and with only a row and column
@@ -58,7 +58,7 @@ public class Cell {
         String string = new String();
         string.concat("row " + this.row + " col " + this.col + " square " + this.square + "\n");
         string.concat("   value " + this.value + "\n");
-        if (this.setInternally){
+        if (this.isSetByGame){
             string.concat("   set internally \n");
         } else {
             string.concat("   not set internally \n");
@@ -68,6 +68,6 @@ public class Cell {
     }
     
     public boolean isSetInternally(){
-        return this.setInternally;
+        return this.isSetByGame;
     }
 }

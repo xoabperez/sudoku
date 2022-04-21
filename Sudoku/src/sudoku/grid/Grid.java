@@ -210,7 +210,7 @@ public final class Grid implements PropertyChangeListener {
         }
         
         cell.setValue(value);
-        cell.setInternally = true;
+        cell.isSetByGame = true;
         
         emptyCells.remove(new Pair(cell.row, cell.col));
         filledCells.put(new Pair(cell.row,cell.col), value);
